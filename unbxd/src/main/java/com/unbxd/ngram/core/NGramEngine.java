@@ -20,7 +20,8 @@ public class NGramEngine {
 
 	private static Map<String,IndexWordSet> posMap = new HashMap<String,IndexWordSet>();
 	private static Dictionary dictionary;
-	
+	private static Set<String> validWordSet = new HashSet<String>();
+	private static Set<String> inValidWordSet = new HashSet<String>();
 	static{
 		try {
 			dictionary = Dictionary.getDefaultResourceInstance();
@@ -46,7 +47,7 @@ public class NGramEngine {
 			for (String word : result) {
 				IndexWordSet wordSet = posMap.get(word);
 				Set<String> set = new HashSet<String>();
-				if(wordSet.size() > 0){
+				if(wordSet != null && wordSet.size() > 0){
 					
             		for(IndexWord indexWord : wordSet.getIndexWordCollection()){
             			set.addAll(JAWJAW.findSynonyms(word, POS.valueOf(indexWord.getPOS().getKey())));
@@ -60,6 +61,7 @@ public class NGramEngine {
 					}
 				}
 				System.out.print(word + relatedSet + " ");
+				//System.out.print(word + " ");
 			}
 			System.out.println("(" + result.size() + " words)");
 		}
@@ -73,18 +75,30 @@ public class NGramEngine {
 
 		for (int i = 2; i < input.length(); i++) {
 			String substring = input.substring(0, i + 1);
-			IndexWordSet wordSet = dictionary.lookupAllIndexWords(substring);
-			if (wordSet.size() > 0) {
-				words.push(substring);
-				posMap.put(substring, wordSet);
-				
-				if (i == input.length() - 1) {
-					results.add(new ArrayList<String>(words));
-				} else {
-					search(input.substring(i + 1), words, results);
+			IndexWordSet wordSet = null;
+			if(!inValidWordSet.contains(substring)){
+				if(!validWordSet.contains(substring)){
+					wordSet = dictionary.lookupAllIndexWords(substring);
 				}
-				words.pop();
+				if (wordSet == null || wordSet.size() > 0) {
+					validWordSet.add(substring);				
+					words.push(substring);
+					if(!posMap.containsKey(substring)){
+						posMap.put(substring, wordSet);
+					}
+					
+					if (i == input.length() - 1) {
+						results.add(new ArrayList<String>(words));
+					} else {
+						search(input.substring(i + 1), words, results);
+					}
+					words.pop();
+				}else{
+					inValidWordSet.add(substring);
+				}
 			}
+			
+			
 		}
 	}
 
